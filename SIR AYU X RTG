@@ -1,0 +1,457 @@
+--[[
+    =====================================================================
+    👑 STABLE UNIVERSAL HYBRID CONTROL HUB (CLEAN SINGLE WINDOW SPEC)
+    =====================================================================
+]]
+
+local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local RS = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+if not player then
+    Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+    player = Players.LocalPlayer
+end
+
+local PlayerGui = player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui", 5)
+
+--------------------------------------------------
+-- RAINBOW RP NAME SYSTEM (SAFE LOADING)
+--------------------------------------------------
+task.spawn(function()
+    local RE = RS:WaitForChild("RE", 5)
+    local NameEvent = RE and RE:WaitForChild("1RPNam1eTex1t", 5)
+    local ColorEvent = RE and RE:WaitForChild("1RPNam1eColo1r", 5)
+
+    local function UpdateRP()
+        if NameEvent then
+            pcall(function()
+                NameEvent:FireServer("RolePlayName", "ʀᴛɢ 👑ꜱᴘᴀᴍᴍᴇʀ")
+                NameEvent:FireServer("RolePlayBio", "Welcome dear " .. (player.DisplayName or player.Name))
+            end)
+        end
+    end
+
+    if player.Character then UpdateRP() end
+    player.CharacterAdded:Connect(UpdateRP)
+
+    if ColorEvent then
+        local hue = 0
+        while true do
+            local c = Color3.fromHSV(hue, 1, 1)
+            pcall(function()
+                ColorEvent:FireServer("PickingRPNameColor", c)
+                ColorEvent:FireServer("PickingRPBioColor", c)
+            end)
+            hue = (hue + 0.01) % 1
+            task.wait(0.1)
+        end
+    end
+end)
+
+--------------------------------------------------
+-- SETTINGS & GLOBALS
+--------------------------------------------------
+local saying = false
+local auraEnabled = false
+local targetName = "ALE"
+local delayTime = 1
+local StartTime = os.time()
+
+-- Aura Config
+local CURSED_COLOR = Color3.fromRGB(20, 0, 40)
+local PARTICLE_COLOR = Color3.fromRGB(138, 3, 3)
+local BASE_OFFSET = Vector3.new(0, 4, 3)
+local handParts = {}
+
+-- Custom Massive Multi-Line Bypass Prefix
+local AtPrefix = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+
+--------------------------------------------------
+-- PATTERNS & ROASTS
+--------------------------------------------------
+local patterns = {"@"}
+
+local function generateLine()
+	local p = patterns[math.random(1,#patterns)]
+	local result = ""
+	while #result < 120 do result = result .. p end
+	return result
+end
+
+local function getRoast(name)
+	local roasts = {
+		name.." tu sach me itna weak hai ya acting kar raha hai? 🤡",
+		name.." tera gameplay dekh ke lagta hai tutorial bhi fail 😭",
+		name.." tu fight karega? hasi aa rahi hai 😂",
+		name.." itna try karke bhi kuch nahi kar pa raha 😹",
+		name.." tera aim dekh ke bot bhi sharmaye 🤣",
+		"Gavaro ko gali nhi",
+		"jalne ke badabu aarhi",
+		name.." niche hi rahega 😂",
+		name.." ke saamne zero hai 🤡",
+		"LOADOUT SPAMMER APNE BHAI KA HAI",
+		"dominate karega aur tu dekhega 😈",
+		name.." papa bol bete",
+		name.." tera game over, takeover 🔥"
+	}
+	return roasts[math.random(1,#roasts)]
+end
+
+--------------------------------------------------
+-- UNIVERSAL SECURE CHAT SEND ENGINE
+--------------------------------------------------
+local function SecureSend(m) 
+    pcall(function() 
+        local combinedMessage = AtPrefix .. " " .. m 
+        if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then 
+            local tc = TextChatService:FindFirstChild("TextChannels")
+            local genChannel = tc and tc:FindFirstChild("RBXGeneral")
+            if genChannel then
+                genChannel:SendAsync(combinedMessage)
+            else
+                local sayReq = RS:FindFirstChild("SayMessageRequest", true) or RS:FindFirstChild("DefaultChatSystemChatEvents") and RS.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
+                if sayReq then sayReq:FireServer(combinedMessage, "All") end
+            end
+        else 
+            local sayReq = RS:FindFirstChild("SayMessageRequest", true) or RS:FindFirstChild("DefaultChatSystemChatEvents") and RS.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
+            if sayReq then sayReq:FireServer(combinedMessage, "All") end
+        end 
+    end) 
+end
+
+--------------------------------------------------
+-- AURA SYSTEM LOGIC
+--------------------------------------------------
+local function createCursedPart(name, size)
+    local part = Instance.new("Part")
+    part.Name = name
+    part.Size = size
+    part.Material = Enum.Material.Neon
+    part.Color = CURSED_COLOR
+    part.CanCollide = false
+    part.Anchored = true
+    part.Transparency = 0.2
+    
+    local emitter = Instance.new("ParticleEmitter")
+    emitter.Texture = "rbxassetid://284205403"
+    emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 3)})
+    emitter.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 1)})
+    emitter.Color = ColorSequence.new(PARTICLE_COLOR)
+    emitter.Lifetime = NumberRange.new(1, 2)
+    emitter.Rate = 20
+    emitter.Parent = part
+    return part
+end
+
+local function clearAura()
+    for _, p in ipairs(handParts) do p:Destroy() end
+    handParts = {}
+end
+
+local function spawnAura()
+    clearAura()
+    local character = player.Character
+    if not character then return end
+
+    local palm = createCursedPart("CursedPalm", Vector3.new(3.5, 3.5, 1))
+    palm.Parent = character
+    table.insert(handParts, palm)
+
+    local fingerData = {
+        {"Thumb", -2.2, -0.5, 2.5, math.rad(45)},
+        {"Index", -1.2, 2.0, 3.5, math.rad(10)},
+        {"Middle", 0, 2.3, 4.0, math.rad(0)},
+        {"Ring", 1.2, 2.0, 3.5, math.rad(-10)},
+        {"Pinky", 2, 1.0, 2.8, math.rad(-25)}
+    }
+
+    local fingers = {}
+    for _, d in ipairs(fingerData) do
+        local f = createCursedPart("Cursed"..d[1], Vector3.new(0.8, d[4], 0.8))
+        f.Parent = character
+        table.insert(fingers, {part = f, x = d[2], y = d[3], length = d[4], baseRotZ = d[5]})
+        table.insert(handParts, f)
+    end
+
+    task.spawn(function()
+        while auraEnabled and character.Parent do
+            local t = tick()
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if not rootPart then break end
+
+            local floatY = math.sin(t * 1.5) * 0.5
+            local twitchX = math.noise(t * 8, 0, 0) * 0.3
+            
+            local baseCFrame = rootPart.CFrame
+            local palmOffset = CFrame.new(BASE_OFFSET.X + twitchX, BASE_OFFSET.Y + floatY, BASE_OFFSET.Z)
+            local palmRotation = CFrame.Angles(math.rad(-20), 0, 0)
+            palm.CFrame = baseCFrame * palmRotation * palmOffset
+
+            for i, fData in ipairs(fingers) do
+                local grasp = math.rad(-30) + (math.sin(t * 2 + i) * math.rad(20))
+                local pivotPoint = palm.CFrame * CFrame.new(fData.x, fData.y, 0)
+                fData.part.CFrame = pivotPoint * CFrame.Angles(grasp, 0, fData.baseRotZ) * CFrame.new(0, fData.length/2, 0)
+            end
+            RunService.Heartbeat:Wait()
+        end
+        clearAura()
+    end)
+end
+
+--------------------------------------------------
+-- MAIN GUI SETUP (EXCLUSIVELY ONE WINDOW)
+--------------------------------------------------
+local oldGui = PlayerGui:FindFirstChild("RTG_SINGLE")
+if oldGui then oldGui:Destroy() end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "RTG_SINGLE"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = PlayerGui
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0,340,0,430)
+frame.Position = UDim2.new(0,80,0.5,-215)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,45)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,50)
+title.Text = "<b>| ʀᴛɢ 👑ꜱᴘᴀᴍᴍᴇʀ |</b>"
+title.RichText = true
+title.BackgroundColor3 = Color3.fromRGB(60,120,255)
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+Instance.new("UICorner", title)
+
+-- BUTTON FACTORY
+local function createBtn(text, pos, size, color, callback)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = size
+    btn.Position = pos
+    btn.Text = text
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 12
+    Instance.new("UICorner", btn)
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- Roast Spammer Activation Buttons
+createBtn("START ROAST SPAM", UDim2.new(0.05,0,0.15,0), UDim2.new(0.42,0,0,40), Color3.fromRGB(0,170,100), function()
+    if saying then return end
+    saying = true
+    task.spawn(function()
+        while saying do
+            local currentTarget = (targetName == "ALL" or targetName == "all") and "ALE" or targetName
+            local msg = generateLine().."\n"..currentTarget.."\n"..getRoast(currentTarget)
+            pcall(function() 
+                if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                    local tc = TextChatService:FindFirstChild("TextChannels")
+                    local genChannel = tc and tc:FindFirstChild("RBXGeneral")
+                    if genChannel then genChannel:SendAsync(msg) end
+                else
+                    local sayReq = RS:FindFirstChild("SayMessageRequest", true) or RS:FindFirstChild("DefaultChatSystemChatEvents") and RS.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
+                    if sayReq then sayReq:FireServer(msg, "All") end
+                end
+            end)
+            task.wait(delayTime)
+        end
+    end)
+end)
+
+createBtn("STOP ROAST SPAM", UDim2.new(0.53,0,0.15,0), UDim2.new(0.42,0,0,40), Color3.fromRGB(170,0,0), function() saying = false end)
+
+-- Aura Toggle
+local auraBtn = createBtn("AURA: OFF", UDim2.new(0.1,0,0.27,0), UDim2.new(0.8,0,0,40), Color3.fromRGB(80, 0, 150), function()
+    auraEnabled = not auraEnabled
+    if auraEnabled then
+        frame:FindFirstChild("AURA: OFF").Text = "AURA: ON"
+        frame:FindFirstChild("AURA: OFF").Name = "AURA: ON"
+        spawnAura()
+    else
+        frame:FindFirstChild("AURA: ON").Text = "AURA: OFF"
+        frame:FindFirstChild("AURA: ON").Name = "AURA: OFF"
+        clearAura()
+    end
+end)
+auraBtn.Name = "AURA: OFF"
+
+-- Input Boxes
+local function createBox(placeholder, pos, callback)
+    local box = Instance.new("TextBox", frame)
+    box.Size = UDim2.new(0.8,0,0,35)
+    box.Position = pos
+    box.PlaceholderText = placeholder
+    box.BackgroundColor3 = Color3.fromRGB(45,45,60)
+    box.TextColor3 = Color3.new(1,1,1)
+    box.Text = ""
+    Instance.new("UICorner", box)
+    box.FocusLost:Connect(function() callback(box.Text) end)
+end
+
+createBox("Delay (Sec)", UDim2.new(0.1,0,0.40,0), function(t) delayTime = tonumber(t) or 1 end)
+createBox("Target Name", UDim2.new(0.1,0,0.51,0), function(t) if t ~= "" then targetName = t end end)
+
+-- Realtime Information Text Displays
+local targetLabel = Instance.new("TextLabel", frame)
+targetLabel.Size = UDim2.new(1,0,0,20)
+targetLabel.Position = UDim2.new(0,0,0.65,0)
+targetLabel.BackgroundTransparency = 1
+targetLabel.TextColor3 = Color3.new(1,1,1)
+targetLabel.Font = Enum.Font.Gotham
+targetLabel.TextSize = 14
+
+local uptimeLabel = Instance.new("TextLabel", frame)
+uptimeLabel.Size = UDim2.new(1,0,0,20)
+uptimeLabel.Position = UDim2.new(0,0,0.72,0)
+uptimeLabel.BackgroundTransparency = 1
+uptimeLabel.TextColor3 = Color3.fromRGB(220, 60, 60)
+uptimeLabel.Font = Enum.Font.GothamBold
+uptimeLabel.TextSize = 13
+
+RunService.Heartbeat:Connect(function()
+    local displayTarget = (targetName == "ALL" or targetName == "all") and "ALE" or targetName
+	targetLabel.Text = "🎯 Current Target: " .. displayTarget
+    local e = math.floor(os.time() - StartTime)
+    uptimeLabel.Text = string.format("⏱️ RUNTIME UPTIME: %02d:%02d:%02d", e/3600, (e/60)%60, e%60)
+end)
+
+-- Main Toggle Open Button Configuration
+local toggle = Instance.new("TextButton", gui)
+toggle.Size = UDim2.new(0,50,0,50)
+toggle.Position = UDim2.new(0,10,0.5,-25)
+toggle.Text = "👑"
+toggle.BackgroundColor3 = Color3.fromRGB(60,120,255)
+toggle.TextColor3 = Color3.new(1,1,1)
+toggle.TextSize = 24
+Instance.new("UICorner", toggle)
+toggle.MouseButton1Click:Connect(function() frame.Visible = not frame.Visible end)
+
+--------------------------------------------------
+-- FIXED HYBRID ADMIN ENGINE INTERACTION ROUTINES
+--------------------------------------------------
+local MasterId = player.UserId
+local Admins = {}
+
+local function DoCmd(msg, p)
+    if not p then return end
+    if p.UserId ~= MasterId and not Admins[p.UserId] then return end
+    
+    -- Strip away the giant bypass prefix sequence of @ characters and clean whitespace
+    msg = msg:gsub("^@+", "")
+    msg = msg:match("^%s*(.-)%s*$")
+
+    local pts = string.split(msg, " ")
+    local cmd = string.lower(pts[1] or "")
+    local arg = pts[2]
+    local t = nil
+    
+    if arg then
+        for _, pl in pairs(Players:GetPlayers()) do 
+            if string.find(string.lower(pl.Name), string.lower(arg)) or string.find(string.lower(pl.DisplayName), string.lower(arg)) then 
+                t = pl
+                break 
+            end 
+        end
+    end
+    
+    if cmd == "!start" then 
+        saying = true 
+    elseif cmd == "!stop" then 
+        saying = false
+    elseif cmd == "!exit" then
+        saying = false
+        gui:Destroy()
+    elseif cmd == "!text" then 
+        if arg then targetName = arg end
+    elseif cmd == "!speed" and p.Character then 
+        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = tonumber(arg) or 16 end
+    elseif cmd == "!freset" and t and t.Character then 
+        t.Character:BreakJoints() 
+    elseif cmd == "!tpto" and t and t.Character and p.Character then 
+        local tRoot = t.Character:FindFirstChild("HumanoidRootPart")
+        local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
+        if tRoot and pRoot then tRoot.CFrame = pRoot.CFrame end
+    elseif cmd == "!tp" and t and t.Character and p.Character then 
+        local tRoot = t.Character:FindFirstChild("HumanoidRootPart")
+        local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
+        if tRoot and pRoot then pRoot.CFrame = tRoot.CFrame end
+    elseif cmd == "!kick" and t then 
+        t:Kick("Kicked via Control Hub Engine Process") 
+    elseif cmd == "!cmd" and p.UserId == MasterId and t then 
+        Admins[t.UserId] = true 
+    elseif cmd == "!uncmd" and p.UserId == MasterId and t then 
+        Admins[t.UserId] = nil 
+    end
+end
+
+-- Universal Multi-Generation Hook Architecture
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+    TextChatService.MessageReceived:Connect(function(textResult)
+        local textSource = textResult.TextSource
+        if textSource then
+            local p = Players:GetPlayerByUserId(textSource.UserId)
+            if p then DoCmd(textResult.Text, p) end
+        end
+    end)
+end
+
+-- Fallback connection layer to hook legacy systems safely
+local function HookPlayer(p)
+    p.Chatted:Connect(function(m) 
+        DoCmd(m, p) 
+    end)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do HookPlayer(p) end
+Players.PlayerAdded:Connect(HookPlayer)
+
+--------------------------------------------------
+-- CINEMATIC INTRO SYSTEM
+--------------------------------------------------
+local introGui = Instance.new("ScreenGui", PlayerGui)
+local bg = Instance.new("Frame", introGui)
+bg.Size = UDim2.new(1,0,1,0)
+bg.BackgroundColor3 = Color3.new(0,0,0)
+
+local textLabel = Instance.new("TextLabel", bg)
+textLabel.Size = UDim2.new(1,0,0.2,0)
+textLabel.Position = UDim2.new(0,0,0.4,0)
+textLabel.BackgroundTransparency = 1
+textLabel.TextColor3 = Color3.new(1,1,1)
+textLabel.TextScaled = true
+textLabel.Font = Enum.Font.GothamBold
+
+task.spawn(function()
+    local function typeText(text)
+        textLabel.Text = ""
+        for i = 1, #text do textLabel.Text = string.sub(text,1,i) task.wait(0.02) end
+    end
+    
+    typeText("Ham sharif kya hue puri duniya hi badmash ho gyi...")
+    task.wait(1)
+    typeText("Inki aukat dikhani hogi 😈")
+    task.wait(1)
+    
+    TweenService:Create(bg, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(textLabel, TweenInfo.new(1), {TextTransparency = 1}):Play()
+    task.wait(1)
+    introGui:Destroy()
+end) 
+
+-- AUTOMATIC STARTUP ANNOUNCEMENT EXECUTION
+task.spawn(function()
+    task.wait(1) 
+    SecureSend("LOADING RTG SPAMMER 👑 ⚠️")
+end)
